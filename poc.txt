@@ -1,0 +1,44 @@
+import matplotlib.pyplot as plt
+import cv2
+import scipy.ndimage.filters
+import scipy.signal
+orig = cv2.imread('hard.png')
+
+def convolve_avg(img, kernel_size=2):
+    new_img = np.zeros(img.shape)
+    kernel = np.ones((kernel_size, kernel_size))/(kernel_size**2)
+    for i in range(img.shape[2]):
+        new_img[:, :, i] = scipy.signal.fftconvolve(img[:, :, i], kernel, mode='same')
+    return new_img
+
+def convolve_normal(img, kernel_size=2):
+    new_img = np.zeros(img.shape)
+    window = scipy.signal.windows.gaussian(kernel_size, kernel_size/9)
+    kernel = np.outer(window, window)
+    kernel /= np.sum(kernel)
+    for i in range(img.shape[2]):
+        new_img[:, :, i] = scipy.signal.fftconvolve(img[:, :, i], kernel, mode='same')
+    return new_img
+
+
+def compute_diff(img, gap):
+    left = img[:, 0:img.shape[1]-gap, :]
+    right = img[:, gap-1:-1, :]
+    leftg = cv2.cvtColor(left, cv2.COLOR_BGR2GRAY)
+    rightg = cv2.cvtColor(right, cv2.COLOR_BGR2GRAY)
+    stereo = cv2.StereoBM_create(numDisparities=16, blockSize=19)
+    disparity = stereo.compute(leftg, rightg)
+    return disparity
+
+
+for i in range(240, 270):
+    print(i)
+    diff = compute_diff(orig_c.astype('uint8'), i)
+    plt.imshow(diff, 'Greys')
+    plt.show()
+
+for i in range(45, 121, 5):
+    plt.subplot(4, 4, int((i-45)/5)+1)
+    plt.title('Convolve %d' % i)    
+    plt.imshow(compute_diff(convolve_normal(orig, i).astype('uint8'), 255), cmap='gray')
+    
