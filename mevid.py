@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
 
-matplotlib.use('GTK3Cairo')
+# matplotlib.use('GTK3Cairo')
 
 def imread_grey(fname):
     return cv2.cvtColor(cv2.imread(fname), cv2.COLOR_BGR2GRAY)
@@ -67,7 +67,7 @@ def convolve_normal(img, kernel_size=2):
 
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture('blackisgood-crossed.webm')
+    cap = cv2.VideoCapture('datasets/blackisgood.webm')
     i = 0
     for i in range(350):
         ret, frame = cap.read()
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     
         try:
             cv2.imshow('orig', cv2.resize(frame, (1280, 720)))
-            sol = compute_diff(frame.astype('uint8'), 265)
+            sol = compute_diff(frame.astype('uint8'), 255)
             print('sol shape', sol.shape)
             cv2.imshow('sol', sol/256)
             #plt.imshow(sol, cmap='gray') 
