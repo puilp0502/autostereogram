@@ -36,5 +36,16 @@ pip install -r requirements.txt
 
 2. Run Real-time video decoding example:
 ```bash
-python mevid.py
+python realtime_decode.py
 ```
+
+## MATLAB-based decoder
+Make sure you have Image Processing Toolbox and Computer Vision Toolbox installed!  
+
+### Example
+
+```
+I = imread('datasets/skull.png')
+imagesc(resolveSIRD(I))
+```
+

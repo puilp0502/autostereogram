@@ -26,6 +26,33 @@ def offset2(img):
     freq = np.fft.fftfreq(N, T)[1:N//2]
     return 1 / freq[np.argmax(fft)], freq, fft
 
+def image_entropy(img):
+    """
+    Calculates entropy of the greyscale image `img`.
+    img: greyscale image, scaled to 0~255 range
+    """
+    # implements matlab entropy(I)-esque function
+    p, bin_edges = np.histogram(img, 256, (0, 255))
+    p = p[p>0]
+    p = p / p.size
+    logp = np.log2(p)
+    return -1 * np.sum(p * logp)
+
+def compute_entropy(img):
+    entropy_history = []
+    for i in range(32, img.shape[1]//4):
+        print('computing entropy for gap %d' % i)
+        dmap = compute_diff(img, i, nd=16)
+#        dmap_range = np.max(dmap) - np.min(dmap)
+#        dmap = (dmap - np.min(dmap)) * (255 / dmap_range)
+        entropy_history.append(image_entropy(dmap))
+    return np.arange(32, img.shape[1]//4), entropy_history
+
+def offset3(img):
+    g, f_g = compute_entropy(img)
+    x = np.argmin(f_g)
+    return g[0] + x
+
 def offset(img):
     """
     calculates the offset that defines the stereoscopic effect
@@ -39,20 +66,27 @@ def offset(img):
     diffs = np.ediff1d(idx)
     return np.max(diffs)
 
-def compute_diff(img, gap=None, nd=16):
+def compute_diff(img, gap=None, nd=16, md=0):
     if gap == None:
        gap = offset(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
        print(gap)
-    left = img[:, 0:img.shape[1]-gap, :]
-    right = img[:, gap-1:-1, :]
-    leftg = cv2.cvtColor(left, cv2.COLOR_BGR2GRAY)
-    rightg = cv2.cvtColor(right, cv2.COLOR_BGR2GRAY)
-    stereo = cv2.StereoBM_create(numDisparities=nd, blockSize=15)
+    if len(img.shape) == 3: # rgb
+        left = img[:, 0:img.shape[1]-gap, :]
+        right = img[:, gap-1:-1, :]
+        leftg = cv2.cvtColor(left, cv2.COLOR_BGR2GRAY)
+        rightg = cv2.cvtColor(right, cv2.COLOR_BGR2GRAY)
+    else: # greyscale
+        leftg = img[:, 0:img.shape[1]-gap]
+        rightg = img[:, gap-1:-1]
+    print(leftg.shape)
+    print(rightg.shape)
+    stereo = cv2.StereoBM_create(numDisparities=nd, blockSize=19)
+    stereo.setMinDisparity(md)
     disparity = stereo.compute(leftg, rightg)
     return disparity
 
-def autocorr(grey_img):
-    corr = scipy.signal.fftconvolve(grey_img, np.fliplr(grey_img[:, 0:grey_img.shape[1]//6]), mode='valid')
+def autocorr(grey_img, divisor=6):
+    corr = scipy.signal.fftconvolve(grey_img, np.fliplr(grey_img[:, 0:grey_img.shape[1]//int(divisor)]), mode='valid')
     return corr
 
 def convolve_normal(img, kernel_size=2):    
@@ -63,31 +97,3 @@ def convolve_normal(img, kernel_size=2):
     for i in range(img.shape[2]):
         new_img[:, :, i] = scipy.signal.fftconvolve(img[:, :, i], kernel, mode='same')
     return new_img
-
-
-
-if __name__ == "__main__":
-    cap = cv2.VideoCapture('datasets/blackisgood.webm')
-    i = 0
-    for i in range(350):
-        ret, frame = cap.read()
-    
-    while True:
-        print('decoding frame %d' % i)
-        ret, frame = cap.read()
-    
-        try:
-            cv2.imshow('orig', cv2.resize(frame, (1280, 720)))
-            sol = compute_diff(frame.astype('uint8'), 255)
-            print('sol shape', sol.shape)
-            cv2.imshow('sol', sol/256)
-            #plt.imshow(sol, cmap='gray') 
-            #plt.show()
-        except Exception as e:
-            logging.exception('shit happended while decoding frame %d; skipping' % i)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-        i += 1
-    
-    cap.release()
-    cv2.destroyAllWindows()
