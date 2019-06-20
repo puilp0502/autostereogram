@@ -1,4 +1,9 @@
 # Autostereogram encoding & decoding
+Autostereogram solver - Never cross your eyes again™
+## Example
+<img src="./datasets/skull.png" width="300">
+<img src="./datasets/skull-solution.png" width="300"/>
+
 ## Cloning
 1. (If not installed) Install Git-LFS  
 
